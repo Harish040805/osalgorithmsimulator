@@ -1,0 +1,89 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #e0efff;
+    margin: 0;
+    padding-bottom: 80px;
+}
+h1 {
+    text-align: center;
+    color: #0a81ff;
+    margin-bottom: 20px;
+}
+.container {
+    max-width: 1200px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border: 2px solid #c7e2ff;
+    border-radius: 6px;
+}
+input[type="number"] {
+    width: 50px;
+    text-align: center;
+    padding: 5px;
+    border: 2px solid #006de0;
+    border-radius: 4px;
+}
+input[type="number"]:hover {
+    border-color: #bbb;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+th, td {
+    border: 2px solid #444;
+    padding: 5px;
+    text-align: center;
+}
+th {
+    background-color: #057fff;
+	color: #fff;
+}
+.result {
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 18px;
+    padding: 10px;
+    border: 2px solid #ccc;
+    background-color: #eee;
+}
+.taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #057fff;
+    border-top: 2px solid #005bbb;
+    padding: 10px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    box-sizing: border-box;
+}
+.taskbar button.help-btn {
+    padding: 8px 16px;
+    font-weight: bold;
+    background-color: #005bbb;
+    color: white;
+    border: 2px solid #004699;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.taskbar button.help-btn:hover {
+    background-color: #004699;
+}
+.help-iframe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #bdddff;
+    z-index: 1000;
+}
+label{
+	color: #fff;
+}
