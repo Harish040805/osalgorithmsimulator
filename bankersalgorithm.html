@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banker's Algorithm Simulator</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #e0efff;
+    margin: 0;
+    padding-bottom: 80px;
+}
+h1 {
+    text-align: center;
+    color: #0a81ff;
+    margin-bottom: 20px;
+}
+.container {
+    max-width: 1200px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border: 2px solid #c7e2ff;
+    border-radius: 6px;
+}
+input[type="number"] {
+    width: 50px;
+    text-align: center;
+    padding: 5px;
+    border: 2px solid #006de0;
+    border-radius: 4px;
+}
+input[type="number"]:hover {
+    border-color: #bbb;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+th, td {
+    border: 2px solid #444;
+    padding: 5px;
+    text-align: center;
+}
+th {
+    background-color: #057fff;
+	color: #fff;
+}
+.result {
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 18px;
+    padding: 10px;
+    border: 2px solid #ccc;
+    background-color: #eee;
+}
+.taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #057fff;
+    border-top: 2px solid #005bbb;
+    padding: 10px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    box-sizing: border-box;
+}
+.taskbar button.help-btn {
+    padding: 8px 16px;
+    font-weight: bold;
+    background-color: #005bbb;
+    color: white;
+    border: 2px solid #004699;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.taskbar button.help-btn:hover {
+    background-color: #004699;
+}
+.help-iframe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #bdddff;
+    z-index: 1000;
+}
+label{
+	color: #fff;
+}
+</style>
+</head>
+<body>
+<br>
+    <h1>Banker's Algorithm Simulator</h1>
+	<br>
+<div class="container">
+    <div id="tableContainer"></div>
+    <div class="result" id="result">Enter values to see the safe sequence...</div>
+</div>
+
+<div class="taskbar">
+    <button class="help-btn" onclick="openHelp()">Help</button>&nbsp; &nbsp; 
+    <label>Processes: &nbsp; &nbsp; <input type="number" id="numProcesses" value="3" min="1" oninput="createTable()"></label>&nbsp; &nbsp; 
+    <label>Resources: &nbsp; &nbsp; <input type="number" id="numResources" value="3" min="1" oninput="createTable()"></label>
+</div>
+
+<script>
+const TOTAL_RESOURCES = 100; 
+
+function createTable() {
+    const n = parseInt(document.getElementById('numProcesses').value);
+    const m = parseInt(document.getElementById('numResources').value);
+    const container = document.getElementById('tableContainer');
+    container.innerHTML = '';
+
+    const table = document.createElement('table');
+    let html = '<tr><th>Process</th><th>Allocation</th><th>Max</th><th>Available</th><th>Need</th></tr>';
+
+    for (let i = 0; i < n; i++) {
+        html += `<tr><td>P${i}</td>`;
+        ['alloc','max','avail','need'].forEach(type => {
+            html += `<td>`;
+            for (let j = 0; j < m; j++) {
+                if(type === 'need'){
+    html += `<input id="need_${i}_${j}" type="number" value="0" readonly style="width:40px;margin:1px;"
+             onfocus="alert('These fields cannot be editted by the users'); this.blur();">`;
+} else {
+                    let val = 0;
+                    let inputId = `${type}_${i}_${j}`;
+                    html += `<input id="${inputId}" type="number" value="${val}" min="0" style="width:40px;margin:1px;" oninput="runBankers()">`;
+                }
+            }
+            html += `</td>`;
+        });
+        html += `</tr>`;
+    }
+
+    table.innerHTML = html;
+    container.appendChild(table);
+    runBankers();
+}
+
+function runBankers() {
+    const n = parseInt(document.getElementById('numProcesses').value);
+    const m = parseInt(document.getElementById('numResources').value);
+
+    let Allocation = Array.from({length:n}, ()=>Array(m).fill(0));
+    let Max = Array.from({length:n}, ()=>Array(m).fill(0));
+    let Need = Array.from({length:n}, ()=>Array(m).fill(0));
+    let Available = Array(m).fill(TOTAL_RESOURCES);
+
+    let inputError = false;
+
+    for(let i=0;i<n;i++){
+        for(let j=0;j<m;j++){
+            const allocInput = document.getElementById(`alloc_${i}_${j}`);
+            const maxInput = document.getElementById(`max_${i}_${j}`);
+
+            Allocation[i][j] = parseInt(allocInput.value)||0;
+            Max[i][j] = parseInt(maxInput.value)||0;
+
+            allocInput.style.borderColor = '#006de0';
+            maxInput.style.borderColor = '#006de0';
+
+            if(Max[i][j] < Allocation[i][j]){
+                allocInput.style.borderColor = 'red';
+                maxInput.style.borderColor = 'red';
+                inputError = true;
+            }
+
+            Need[i][j] = Max[i][j]-Allocation[i][j];
+            document.getElementById(`need_${i}_${j}`).value = Need[i][j];
+        }
+    }
+
+    for(let j=0;j<m;j++){
+        const totalAlloc = Allocation.reduce((sum,row)=>sum+row[j],0);
+        if(totalAlloc > TOTAL_RESOURCES){
+            inputError = true;
+        }
+        Available[j] = Math.max(0, TOTAL_RESOURCES - totalAlloc);
+    }
+
+    if(inputError){
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.color='#b22222';
+        resultDiv.textContent = 'ERROR: Invalid inputs detected! Check Max >= Allocation or total allocations exceeding system resources.';
+        return;
+    }
+
+    let Work = [...Available];
+    let Finish = Array(n).fill(false);
+    let safeSeq = [];
+    let count = 0;
+
+    while(count<n){
+        let found=false;
+        for(let p=0;p<n;p++){
+            if(!Finish[p]){
+                let canExec=true;
+                for(let j=0;j<m;j++){
+                    if(Need[p][j]>Work[j]){
+                        canExec=false; break;
+                    }
+                }
+                if(canExec){
+                    for(let j=0;j<m;j++) Work[j]+=Allocation[p][j];
+                    Finish[p]=true;
+                    safeSeq.push(`P${p}`);
+                    found=true;
+                    count++;
+                }
+            }
+        }
+        if(!found) break;
+    }
+
+    const resultDiv = document.getElementById('result');
+    if(safeSeq.length===n){
+        resultDiv.style.color='#006400';
+        resultDiv.textContent=`SAFE STATE: Safe sequence: ${safeSeq.join(' → ')}`;
+    } else{
+        resultDiv.style.color='#b22222';
+        resultDiv.textContent=`!UNSAFE STATE: No safe sequence possible`;
+    }
+}
+
+function openHelp() {
+    const iframe = document.createElement('iframe');
+    iframe.className='help-iframe';
+    iframe.id='helpIframe';
+    iframe.srcdoc=`<div style="padding:30px;font-family:Arial, sans-serif;line-height:1.6;">
+	<div style="display: flex; justify-content: flex-end;">
+        <button onclick="parent.document.getElementById('helpIframe').remove()" 
+        style="padding:10px 13px;font-weight:bold;background:#ff0000;color:white;border:none;border-radius:50%;cursor:pointer;">X</button>
+	</div>
+				<h1 style="color: #0a81ff;">Banker's Algorithm Help</h1>
+
+<h2 style="color:#057fff;">1. What is Banker's Algorithm?</h2>
+<p>Banker's Algorithm is a resource allocation and deadlock avoidance algorithm used in operating systems. It helps determine whether granting a resource request will leave the system in a safe state or lead to a deadlock. The algorithm checks all processes’ maximum needs, current allocations, and available resources to ensure that a safe sequence of execution exists before approving resource requests.</p>
+
+<h2 style="color:#057fff;">2. What is this website about?</h2>
+<p>This website is an interactive Banker's Algorithm Simulator. It allows users to simulate resource allocation among multiple processes and automatically determine whether the system is in a safe or unsafe state. Users can enter the allocation and maximum resource needs for each process, and the simulator calculates the Need, Available resources, and the safe sequence, if one exists.</p>
+
+<h2 style="color:#057fff;">3. How to give inputs in the website?</h2>
+<p>
+1. Use the Processes and Resources input fields in the taskbar to set the number of processes and resource types.<br>
+2. Enter the Allocation and Max values for each process and resource in the table.<br>
+&nbsp;&nbsp;<strong>- Allocation:</strong> Resources currently allocated to a process.<br>
+&nbsp;&nbsp;<strong>- Max:</strong> Maximum resources a process may request.<br>
+3. The Need and Available values are calculated automatically.<br>
+4. All inputs are numeric. You can adjust them anytime, and the results update in real-time.
+</p>
+
+<h2 style="color:#057fff;">4. How to see the outputs in the website?</h2>
+<p>
+- The Result section below the table shows the output:<br>
+&nbsp;&nbsp;- If a safe sequence exists, it displays SAFE STATE along with the sequence of processes.<br>
+&nbsp;&nbsp;- If no safe sequence exists, it displays UNSAFE STATE, indicating a potential deadlock.<br>
+- The table also updates Need and Available automatically as you input values.
+</p>
+
+<h2 style="color:#057fff;">5. Features of this website</h2>
+<ul>
+<li><strong>Dynamic Table Creation</strong>: Adjust the number of processes and resources on the fly.</li>
+<li><strong>Automatic Calculations</strong>: Computes Need and Available values instantly.</li>
+<li><strong>Safe Sequence Detection</strong>: Identifies whether the system is in a safe or unsafe state.</li>
+<li><strong>Interactive Inputs</strong>: Change values anytime, and the results update immediately.</li>
+<li><strong>Help Section</strong>: Provides instructions and guidance for using the simulator.</li>
+<li><strong>User-Friendly Design</strong>: Clean layout with color-coded results for easy understanding.</li>
+</ul>
+
+<h2 style="color:#057fff;">6. General Formulas of Banker's Algorithm</h2>
+<p>The following formulas are used for the calculations in the Banker's Algorithm</p>
+<table style="width:100%; border-collapse: collapse; margin-top:10px;">
+  <tr style="background-color:#057fff; color:#fff;">
+    <th style="border: 1px solid #444; padding:5px;">Parameter</th>
+    <th style="border: 1px solid #444; padding:5px;">Formula / Description</th>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #444; padding:5px;">Need[i][j]</td>
+    <td style="border: 1px solid #444; padding:5px;">Max[i][j] − Allocation[i][j]</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #444; padding:5px;">Available[j]</td>
+    <td style="border: 1px solid #444; padding:5px;">TotalResources[j] − Σ Allocation[i][j]</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #444; padding:5px;">Work[j]</td>
+    <td style="border: 1px solid #444; padding:5px;">Initially = Available[j]; then updated as Work[j] + Allocation[i][j] when a process completes</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #444; padding:5px;">Safety Check</td>
+    <td style="border: 1px solid #444; padding:5px;">Process i can execute if Need[i][j] ≤ Work[j] ∀ j</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #444; padding:5px;">Finish[i]</td>
+    <td style="border: 1px solid #444; padding:5px;">Set to true after process i finishes execution</td>
+  </tr>
+  <tr>
+    <td style="border: 1px solid #444; padding:5px;">Safe Sequence</td>
+    <td style="border: 1px solid #444; padding:5px;">Order of processes that can execute without causing deadlock: update Work and Finish sequentially for each safe process</td>
+  </tr>
+</table>
+
+    </div>`;
+    document.body.appendChild(iframe);
+}
+
+createTable();
+</script>
+</body>
+</html>
